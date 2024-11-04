@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The VPC ID where the Lambda function will run.
+  
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: The Subnet ID where the Lambda function will run.
+
+  AllowedCIDRBlock:
+    Type: String
+    Description: IP Address CIDR block that allows outbound access to specific Ip addresses.
+
+Resources:
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: restrict-requests/
+      Runtime: python3.12
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref SubnetId
+      Timeout: 60
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security Group for Lambda with restricted outbound rules"
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: "tcp"
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCIDRBlock
+

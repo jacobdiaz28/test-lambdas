@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ses-example
+  Sample SAM Template for ses-example
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  dish:
+    Type: String
+    Default: Cake
+  elderberryDish:
+    Type: String
+    Default: pudding
+    
+Resources:
+  apple:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: Cruller
+  banana:
+    Type: AWS::SSM::Parameter
+    Properties: 
+      AllowedPattern: "^[A-z]+$"
+      DataType: text
+      Description: This is our Description
+      Name: Banana
+      # Policies: '[{   "Type":"Expiration","Version":"1.0",   "Attributes":{      "Timestamp":"2030-12-02T21:34:33.000Z"}}]'
+      Tags: {"create-date":"2021-07-19", "author": "John Doe"}
+      Tier: Standard
+      Type: String
+      Value: Bread
+  cherry:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: Cherry Pie
+      Name: Cherry
+      Description: The parameter to track the type of cherry dish we cook
+  dragonfruit:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Sub "Dragonfruit ${dish}"
+      Name: Dragonfruit
+      Description: The parameter to track the type of dragonfruit dish we cook
+  elderberry:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref elderberryDish
+      Name: Elderberry
+      Description: The parameter to track the type of elderberry dish we cook
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Policies:
+        - Statement:
+            - Sid: SSMGetParameterPolicy
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:GetParameters
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/apple"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/Banana"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/Cherry"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/Dragonfruit"
+                # - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/Elderberry"
+
+
+
+Outputs:
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+  HelloWorldFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt HelloWorldFunctionRole.Arn

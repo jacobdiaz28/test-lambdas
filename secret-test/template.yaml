@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template to create restricted and unauthorized secrets in AWS Secrets Manager and a Lambda with limited access
+
+Resources:
+  # Define the specific authorized secret in AWS Secrets Manager
+  MyRestrictedSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: MyRestrictedApplicationSecret
+      Description: "A restricted secret for my application"
+      SecretString: '{"username":"restricted_user","password":"RestrictedP@ssw0rd123"}'  # Initial value (JSON format)
+
+  # Define an unauthorized secret in AWS Secrets Manager
+  SomeOtherSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: SomeOtherSecret
+      Description: "An unauthorized secret for testing access restrictions"
+      SecretString: '{"username":"unauthorized_user","password":"NoAccessP@ssw0rd456"}'  # Initial value (JSON format)
+
+  # Define the Lambda function with permission only to access MyRestrictedSecret
+  RestrictedSecretFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: restricted_secret_lambda/  # Directory where the Lambda function code is located
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Environment:
+        Variables:
+          SECRET_NAME: !Ref MyRestrictedSecret  # Pass the authorized secret name as an environment variable
+      Policies:
+        - Statement:
+            - Sid: AllowRetrieveSpecificSecret
+              Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref MyRestrictedSecret  # Grant access only to MyRestrictedSecret
+
+Outputs:
+  RestrictedSecretFunctionArn:
+    Description: "The ARN of the Restricted Secret Retrieval Lambda Function"
+    Value: !GetAtt RestrictedSecretFunction.Arn
+  MyRestrictedSecretArn:
+    Description: "The ARN of the restricted secret"
+    Value: !Ref MyRestrictedSecret
+  MyRestrictedSecretName:
+    Description: "The name of the restricted secret"
+    Value: !Ref MyRestrictedSecret
+  SomeOtherSecretArn:
+    Description: "The ARN of the unauthorized secret"
+    Value: !Ref SomeOtherSecret
+  SomeOtherSecretName:
+    Description: "The name of the unauthorized secret"
+    Value: !Ref SomeOtherSecret
